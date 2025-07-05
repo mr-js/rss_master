@@ -1,25 +1,29 @@
-import feedparser
+import parsers.feedparser as feedparser
 from datetime import datetime, timedelta
 from time import mktime
 import configparser
 import webbrowser
 import re
+import os
 
 
-def filename_check(filename):
+def file_name_check(file_name):
     for c in r'\/:*?"<>|':
-        filename = filename.replace(c, ' ')
-    filename = filename.replace('\n', ' ')
-    filename = re.sub(' +', ' ', filename).strip()
-    return filename
+        file_name = file_name.replace(c, ' ')
+    file_name = file_name.replace('\n', ' ')
+    file_name = re.sub(' +', ' ', file_name).strip()
+    return file_name
 
 
-def html_write(filename, title, subtitle, content):
-    filename = filename_check(filename) + '.html'
+def html_write(path, file, title, subtitle, content):
+    file = file_name_check(file) + '.html'
+    if not os.path.exists(path):
+        os.makedirs(path)    
     header = r'<!DOCTYPE html>'+ '\n' + '<html>' + '\n' + '<head>' + '\n' + \
     '<meta http-equiv="content-type" content="text/html; charset=utf-8" />' + \
     '\n' + '<title>' + title + '</title>' + '\n' + '</head>' + '\n' + \
     '<style>a {text-decoration: none;} </style>' + '\n'
+    filename = os.path.join(path, file)
     f = open(filename, 'w', encoding='utf8')
     f.write(header + '<body style="font-family:Arial">' + '\n')
     f.write(content + '\n' + subtitle + '\n')
@@ -59,29 +63,31 @@ def rss_feed(url, name, new=None, keywords=None, limit=100):
 
 
 def rss_feeds():
-    print('started')
+    print('STARTED')
     content = ''
     config = configparser.RawConfigParser()
     config.optionxform = str
-    config.read('rss_master.ini', encoding='utf-8')
+    
+    config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rss_master.ini'), encoding='utf-8')
     if config.getboolean('COMMON', 'UseKeywordsFilter'):
         keywords = str.split(str(config.get('COMMON', 'Keywords')), ',')
-##        print('keywords: {}'.format(', '.join(map(str, keywords))))
+        print('keywords: {}'.format(', '.join(map(str, keywords))))
     else:
         keywords = None
     age = int(config.get('COMMON', 'NewsDaysOld'))
     limit = int(config.get('COMMON', 'NewsRecordsLimit'))
     title = str(config.get('COMMON', 'Title'))
-    filename = str(config.get('COMMON', 'FileName'))
+    file_path = str(config.get('COMMON', 'FilePath'))    
+    file_name = str(config.get('COMMON', 'FileName')) 
     for key in config['FEED LIST']:
         print('source: {}'.format(key))
         content += rss_feed(config.get('FEED LIST', key), key, age, keywords, limit)
     timestamp = str(datetime.today().strftime('%d.%m.%Y %H:%M:%S'))
     signature = 'Generated at {} by RSS Master'.format(timestamp)
-    result = html_write(filename, title, signature, content)
+    result = html_write(file_path, file_name, title, signature, content)
     if config.getboolean('COMMON', 'AutoOpen'):
         webbrowser.open(result)
-    print('finished')
+    print('FINISHED')
 
 
 if __name__ == "__main__":

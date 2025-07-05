@@ -1,6 +1,8 @@
 # rss_master
  RSS feed aggregator with summary generation in a single file
 
+ ![rss_master](/images/rss_master.png)
+
  ## Usage
  Just specify the channel list and settings in the ini-file (see below)
 
